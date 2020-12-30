@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   * @file    terminal.cc
-  * @author  Ac6
+  * @author  Kishwar Kumar
   * @version V1.0
   * @date    28-December-2020
   * @memory  512Kbytes Flash, 128KByte SRAM
