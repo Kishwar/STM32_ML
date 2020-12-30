@@ -42,15 +42,18 @@ int main(void)
   SystemCoreClockUpdate();
   hal_uart_config();
 
+  print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\r");
+  print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\r");
+
   const tflite::Model* model             = nullptr;
   tflite::MicroInterpreter* interpreter  = nullptr;
   TfLiteTensor* model_input              = nullptr;
   TfLiteTensor* model_output             = nullptr;
   float* input_buffer                    = nullptr;
-  constexpr uint32_t kTensorArenaSize    = 2048;
+  constexpr uint32_t kTensorArenaSize    = 16 * 1024;
   uint8_t tensor_arena[kTensorArenaSize] = { 0 };
 
-  print("\n\rLoading Model\n\r");
+  print("\n\r5. Loading Model\n\r");
   model = tflite::GetModel(mnist_tflite);
 
   if(model->version() != TFLITE_SCHEMA_VERSION) {
@@ -76,8 +79,6 @@ int main(void)
      return 0;
   }
 
-  print("\n\rDEBUG_ 1\n\r");
-
   //Obtain pointers to the model's input and output tensors.
   model_input = interpreter->input(0);
   model_output = interpreter->output(0);
@@ -86,8 +87,6 @@ int main(void)
   input_buffer = model_input->data.f;
   bitmap_to_float_array(input_buffer, mnist_1);
 
-  print("\n\rDEBUG_ 2\n\r");
-
   //Run the model
   TfLiteStatus invoke_status = interpreter->Invoke();
   if (invoke_status != kTfLiteOk)
@@ -95,8 +94,6 @@ int main(void)
     print("\n\rInvoke failed...\n\r");
     return 0;
   }
-
-  print("\n\rDEBUG_ 3\n\r");
 
   float* result = model_output->data.f;
   print("\n\rValue detected: ");
@@ -107,11 +104,11 @@ int main(void)
 
 void bitmap_to_float_array(float* dest, const unsigned char* bitmap) {
   int pixel = 0;
-  for( int y = 0; y < 28; y++ ) {
-    for( int x = 0; x < 28; x++ ) {
+  for(int y = 0; y < 28; y++) {
+    for(int x = 0; x < 28; x++) {
       int B = x / 8; // the Byte # of the row
       int b = x % 8; // the Bit # of the Byte
-      dest[ pixel ] = ( bitmap[ y * 4 + B ] >> ( 7 - b ) ) &
+      dest[pixel] = (bitmap[y * 4 + B] >> (7 - b)) &
                         0x1 ? 1.0f : 0.0f;
       pixel++;
     }

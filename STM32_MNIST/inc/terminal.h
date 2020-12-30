@@ -17,3 +17,4 @@ void print(const std::string& str);
 void print(int i);
 void print(double d);
 void print(uint32_t t);
+void print(size_t z);

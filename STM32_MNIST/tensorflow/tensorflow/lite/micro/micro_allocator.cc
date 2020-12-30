@@ -27,6 +27,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/memory_helpers.h"
 #include "tensorflow/lite/micro/memory_planner/greedy_memory_planner.h"
 #include "tensorflow/lite/micro/simple_memory_allocator.h"
+#include "terminal.h"
 
 namespace tflite {
 
@@ -382,9 +383,11 @@ TfLiteStatus InitializeRuntimeTensor(
 
 TfLiteStatus MicroAllocator::Init() {
   auto* subgraphs = model_->subgraphs();
+  print("Init_Started...\n\n\r");
   if (subgraphs->size() != 1) {
     TF_LITE_REPORT_ERROR(error_reporter_,
                          "Only 1 subgraph is currently supported.\n");
+    print("Only 1 subgraph is currently supported.\n");
     return kTfLiteError;
   }
   subgraph_ = (*subgraphs)[0];
@@ -399,6 +402,7 @@ TfLiteStatus MicroAllocator::Init() {
         error_reporter_,
         "Failed to allocate memory for context->tensors, %d bytes required",
         sizeof(TfLiteTensor) * context_->tensors_size);
+    print("Failed to allocate memory for context->tensors.\n");
     return kTfLiteError;
   }
 
@@ -410,10 +414,11 @@ TfLiteStatus MicroAllocator::Init() {
     if (status != kTfLiteOk) {
       TF_LITE_REPORT_ERROR(error_reporter_, "Failed to initialize tensor %d",
                            i);
+      print("Failed to initialize tensor.\n");
       return kTfLiteError;
     }
   }
-
+  print("return OK");
   return kTfLiteOk;
 }
 
@@ -456,8 +461,10 @@ MicroAllocator::MicroAllocator(TfLiteContext* context, const Model* model,
     TF_LITE_REPORT_ERROR(error_reporter_,
                          "MicroAllocator: Failed to initialize.");
     active_ = false;
+    print("\n\rmicro_allocator: 463: active_: false");
   } else {
     active_ = true;
+    print("\n\rmicro_allocator: 466: active_: true");
   }
 }
 
@@ -468,6 +475,8 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
     return kTfLiteError;
   }
 
+  print("\n\rmicro_allocator: 478\n\n");
+
   auto* output = reinterpret_cast<NodeAndRegistration*>(
       memory_allocator_->AllocateFromTail(
           sizeof(NodeAndRegistration) * subgraph_->operators()->size(),
@@ -476,6 +485,7 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
     TF_LITE_REPORT_ERROR(
         error_reporter_,
         "Failed to allocate memory for node_and_registrations.");
+    print("\n\rmicro_allocator: 478: failed to allocate the memory\n\n");
     return kTfLiteError;
   }
   TfLiteStatus status = kTfLiteOk;
@@ -487,6 +497,7 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
     if (index >= opcodes->size()) {
       TF_LITE_REPORT_ERROR(error_reporter_,
                            "Missing registration for opcode_index %d\n", index);
+      print("\n\rmicro_allocator: 500: Missing registration for opcode_index\n\n");
       return kTfLiteError;
     }
     auto* opcode = (*opcodes)[index];
@@ -496,12 +507,16 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
       TF_LITE_REPORT_ERROR(error_reporter_,
                            "Failed to get registration from op code %s\n ",
                            EnumNameBuiltinOperator(opcode->builtin_code()));
+      print("\n\rmicro_allocator: 510: returning status\n\n\r");
+      print("\n\ropcode: ");
+      print(opcode->builtin_code());
       return status;
     }
     const auto* registration = output[i].registration;
     if (registration == nullptr) {
       TF_LITE_REPORT_ERROR(error_reporter_, "Skipping op for opcode_index %d\n",
                            index);
+      print("\n\rmicro_allocator: 517: Skipping op for opcode_index\n\n");
       return kTfLiteError;
     }
     BuiltinOperator op_type =
@@ -513,6 +528,7 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
           "Unsupported behavior: found builtin operator %s with custom "
           "options.\n",
           EnumNameBuiltinOperator(op_type));
+      print("\n\rmicro_allocator: 529: found buildin operator\n\n");
       return kTfLiteError;
     }
 
@@ -543,11 +559,13 @@ TfLiteStatus MicroAllocator::AllocateNodeAndRegistrations(
     node->custom_initial_data_size = custom_data_size;
   }
   *node_and_registrations = output;
+  print("\n\rmicro_allocator: 560: return OK status\n\n");
   return kTfLiteOk;
 }
 
 TfLiteStatus MicroAllocator::FinishTensorAllocation() {
   if (!active_) {
+    print("\n\rFinishTensorAllocation: micro_allocator 568 Error\n\r");
     return kTfLiteError;
   }
 
@@ -588,6 +606,12 @@ TfLiteStatus MicroAllocator::FinishTensorAllocation() {
           "Arena size is too small for activation buffers. Needed %d but only "
           "%d was available.",
           planner.GetMaximumMemorySize(), actual_available_arena_size);
+      print("\n\rArena size is too small for activation buffers.\n\r");
+      print("\n\rNeeded: ");
+      print(planner.GetMaximumMemorySize());
+      print(" Available: ");
+      print(actual_available_arena_size);
+      print("\n\r");
       return kTfLiteError;
     }
 
@@ -613,6 +637,7 @@ TfLiteStatus MicroAllocator::FinishTensorAllocation() {
   }
 
   active_ = false;
+  print("\nactive_: false");
   return kTfLiteOk;
 }
 

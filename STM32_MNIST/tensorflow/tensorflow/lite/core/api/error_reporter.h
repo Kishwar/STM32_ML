@@ -17,6 +17,8 @@ limitations under the License.
 
 #include <cstdarg>
 
+#define TF_LITE_STRIP_ERROR_STRINGS
+
 namespace tflite {
 
 /// A functor that reports error to supporting system. Invoked similar to

@@ -32,3 +32,8 @@ void print(uint32_t t) {
   std::string s = std::to_string(t);
   print(s);
 }
+
+void print(size_t z) {
+  std::string s = std::to_string(z);
+  print(s);
+}

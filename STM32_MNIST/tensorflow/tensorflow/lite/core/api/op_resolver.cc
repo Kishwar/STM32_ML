@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "tensorflow/lite/core/api/op_resolver.h"
+#include "terminal.h"
 
 namespace tflite {
 
@@ -32,6 +33,8 @@ TfLiteStatus GetRegistrationFromOpCode(
         "Op builtin_code out of range: %d. Are you using old TFLite binary "
         "with newer model?",
         builtin_code);
+    print("Op builtin_code out of range: Are you using old TFLite binary "
+        "with newer model?\n");
     status = kTfLiteError;
   } else if (builtin_code != BuiltinOperator_CUSTOM) {
     *registration = op_resolver.FindOp(builtin_code, version);
@@ -40,12 +43,14 @@ TfLiteStatus GetRegistrationFromOpCode(
           error_reporter,
           "Didn't find op for builtin opcode '%s' version '%d'\n",
           EnumNameBuiltinOperator(builtin_code), version);
+      print("Didn't find op for builtin opcode");
       status = kTfLiteError;
     }
   } else if (!opcode->custom_code()) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
         "Operator with CUSTOM builtin_code has no custom_code.\n");
+    print("Operator with CUSTOM builtin_code has no custom_code.\n");
     status = kTfLiteError;
   } else {
     const char* name = opcode->custom_code()->c_str();
@@ -53,6 +58,7 @@ TfLiteStatus GetRegistrationFromOpCode(
     if (*registration == nullptr) {
       // Do not report error for unresolved custom op, we do the final check
       // while preparing ops.
+      print("registration is nullptr");
       status = kTfLiteError;
     }
   }

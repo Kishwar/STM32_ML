@@ -20,6 +20,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/compatibility.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_optional_debug_tools.h"
+#include "terminal.h"
 
 namespace tflite {
 namespace {
@@ -81,8 +82,6 @@ MicroInterpreter::MicroInterpreter(const Model* model,
   const flatbuffers::Vector<flatbuffers::Offset<SubGraph>>* subgraphs =
       model->subgraphs();
   if (subgraphs->size() != 1) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Only 1 subgraph is currently supported.\n");
     initialization_status_ = kTfLiteError;
     return;
   }
@@ -169,6 +168,8 @@ TfLiteStatus MicroInterpreter::AllocateTensors() {
   context_.RequestScratchBufferInArena = nullptr;
   context_.GetScratchBuffer = nullptr;
 
+  print("\n\rcame here..\n\n\r");
+
   for (size_t i = 0; i < subgraph_->operators()->size(); ++i) {
     context_helper_.SetNodeIndex(i);
     auto* node = &(node_and_registrations_[i].node);
@@ -193,23 +194,43 @@ TfLiteStatus MicroInterpreter::AllocateTensors() {
   // in Prepare stage.
   context_.RequestScratchBufferInArena =
       context_helper_.RequestScratchBufferInArena;
+  char sizeprint[5] = {0,0,0,0,0};
+  sprintf(sizeprint, "%d", subgraph_->operators()->size());
+  print("\n\rsize: ");
+  print(sizeprint);
   for (size_t i = 0; i < subgraph_->operators()->size(); ++i) {
     // Set node idx to annotate the lifetime for scratch buffers.
     context_helper_.SetNodeIndex(i);
     auto* node = &(node_and_registrations_[i].node);
+    print("\n\r Node: ");
+    print(sizeof(TfLiteNode));
+    print("\n\r");
     auto* registration = node_and_registrations_[i].registration;
     if (registration->prepare) {
       TfLiteStatus prepare_status = registration->prepare(&context_, node);
+
+      print("\n\rNode: ");
+      print(OpNameFromRegistration(registration));
+
       if (prepare_status != kTfLiteOk) {
         TF_LITE_REPORT_ERROR(
             error_reporter_,
             "Node %s (number %df) failed to prepare with status %d",
             OpNameFromRegistration(registration), i, prepare_status);
+        print("\n\rNode: ");
+        print(OpNameFromRegistration(registration));
+        print(" number: ");
+        print(i);
+        print(" failed to prepare with status: ");
+        print(prepare_status);
+        print("\n\r");
         return kTfLiteError;
       }
     }
   }
   context_helper_.SetNodeIndex(-1);
+
+  print("\n\rFinished registration->prepare(&context_, node)\n\r");
 
   // Prepare is done, we're ready for Invoke. Memory allocation is no longer
   // allowed. Kernels can only fetch scratch buffers via GetScratchBuffer.
@@ -217,7 +238,9 @@ TfLiteStatus MicroInterpreter::AllocateTensors() {
   context_.RequestScratchBufferInArena = nullptr;
   context_.GetScratchBuffer = context_helper_.GetScratchBuffer;
 
+  print("\n\rTF_LITE_ENSURE_OK(&context_, allocator_.FinishTensorAllocation()) --> Start\n\r");
   TF_LITE_ENSURE_OK(&context_, allocator_.FinishTensorAllocation());
+  print("\n\rTF_LITE_ENSURE_OK(&context_, allocator_.FinishTensorAllocation()) --> End\n\r");
   tensors_allocated_ = true;
   return kTfLiteOk;
 }
